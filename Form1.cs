@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -16,14 +16,15 @@ using System.Threading;
 
 namespace Senddata
 {
-    public partial class Form1 : Form
+    public partial class tBoxDataOut2 : Form
     {
         string dataOUT;
         string sendWith;
         string dataIN;
+        private bool isCalculating = false; // Flag to control the loop
         bool bStopTest = false;
         PointPairList myList = new PointPairList();
-        public Form1()
+        public tBoxDataOut2()
         {
             InitializeComponent();
             initGraph();
@@ -32,9 +33,9 @@ namespace Senddata
         private void initGraph()
         {
             GraphPane myPane = zg1.GraphPane;
-            myPane.Title.Text = "Sin(x) Plot";
+            myPane.Title.Text = "Data";
             myPane.XAxis.Title.Text = "Time";
-            myPane.Y2Axis.Title.Text = "Amplitude";
+            myPane.Y2Axis.Title.Text = "Speed";
 
             myPane.XAxis.MajorGrid.IsVisible = true;
             myPane.YAxis.MajorGrid.IsVisible = true;
@@ -208,7 +209,29 @@ namespace Senddata
         {
             dataIN = serialPort1.ReadExisting();
             this.Invoke(new EventHandler(ShowData));
+            this.Invoke(new EventHandler(UpdateGraphWithData));
 
+        }
+        private void UpdateGraphWithData(object sender, EventArgs e)
+        {
+            if (double.TryParse(dataIN, out double plotdata))
+            {
+                // Parse the received data and add it to the graph
+                double time = myList.Count; // Use the number of data points as the time
+                myList.Add(time, plotdata);
+                UpdateGraph();
+
+                if (chBoxAddtoOldData.Checked)
+                {
+                    // Append the received data to the textbox
+                    tBoxDataIn.AppendText(dataIN + Environment.NewLine);
+                }
+                else if (chBoxAlwaysUpdate.Checked)
+                {
+                    // Display the most recent received data in the textbox
+                    tBoxDataIn.Text = dataIN;
+                }
+            }
         }
         private void ShowData(object sender, EventArgs e)
         {
@@ -261,36 +284,6 @@ namespace Senddata
             zg1.Update();
             zg1.Refresh();
         }
-
-        private void CalculateAndFill()
-        {
-            double time = 0;
-            while (true)
-            {
-                double plotdata = Convert.ToDouble(tBoxDataIn.Text);
-
-                myList.Add(time,plotdata);
-                time++;
-                UpdateGraph();
-
-                if (bStopTest)
-                {
-                    break;
-                }
-            }
-        }
-
-        private void btnStart_Click(object sender, EventArgs e)
-        {
-            bStopTest = false;
-            myList.Clear();
-            Thread plotThread = new Thread(new ThreadStart(CalculateAndFill));
-            plotThread.Start();
-        }
-
-        private void btnStop_Click(object sender, EventArgs e)
-        {
-            bStopTest = true;
-        }
     }
 }
+ 
