@@ -16,15 +16,13 @@ using System.Threading;
 
 namespace Senddata
 {
-    public partial class tBoxDataOut2 : Form
+    public partial class ComPortSerial : Form
     {
         string dataOUT;
         string sendWith;
         string dataIN;
-        private bool isCalculating = false; // Flag to control the loop
-        bool bStopTest = false;
         PointPairList myList = new PointPairList();
-        public tBoxDataOut2()
+        public ComPortSerial()
         {
             InitializeComponent();
             initGraph();
@@ -58,17 +56,17 @@ namespace Senddata
             chBoxDTREnable2.Checked = false;
             serialPort1.DtrEnable = false;
             chBoxRTSEnable.Checked = false;
-            serialPort1.RtsEnable = false; 
+            serialPort1.RtsEnable = false;
             btnSendData.Enabled = false;
             chBoxWriteLine.Checked = false;
             chBoxWrite.Checked = true;
             chBoxAddtoOldData.Checked = true;
             chBoxAlwaysUpdate.Checked = false;
-     
+
             sendWith = "Write";
 
         }
-  
+        int i = 0;
         private void btnOpen_Click(object sender, EventArgs e)
         {
             try
@@ -83,6 +81,7 @@ namespace Senddata
                 btnOpen.Enabled = false;
                 btnClose.Enabled = true;
                 lblStatus.Text = "ON";
+                timer1.Start();
             }
             catch (Exception err)
             {
@@ -109,7 +108,7 @@ namespace Senddata
         {
             if (serialPort1.IsOpen)
             {
-                dataOUT = tBoxDataOut.Text;
+                dataOUT = tBoxDataOut.Text +"|"+ tBoxDataOut2.Text;
                 if (sendWith == "WriteLine")
                 {
                     serialPort1.WriteLine(dataOUT);
@@ -146,7 +145,7 @@ namespace Senddata
         }
         private void btnClearData_Click(object sender, EventArgs e)
         {
-            if(tBoxDataOut.Text != "")
+            if (tBoxDataOut.Text != "")
             {
                 tBoxDataOut.Text = "";
             }
@@ -167,7 +166,7 @@ namespace Senddata
         {
             if (chBoxUsingEnter.Checked)
             {
-                if(e.KeyCode == Keys.Enter)
+                if (e.KeyCode == Keys.Enter)
                 {
                     if (serialPort1.IsOpen)
                     {
@@ -193,7 +192,7 @@ namespace Senddata
                 chBoxWrite.Checked = false;
                 chBoxWriteLine.Checked = true;
             }
-        }
+        } 
 
         private void chBoxWrite_CheckedChanged(object sender, EventArgs e)
         {
@@ -207,7 +206,7 @@ namespace Senddata
 
         private void serialPort1_DataReceived(object sender, SerialDataReceivedEventArgs e)
         {
-            dataIN = serialPort1.ReadExisting();
+            dataIN = serialPort1.ReadByte().ToString();
             this.Invoke(new EventHandler(ShowData));
             this.Invoke(new EventHandler(UpdateGraphWithData));
 
@@ -217,7 +216,7 @@ namespace Senddata
             if (double.TryParse(dataIN, out double plotdata))
             {
                 // Parse the received data and add it to the graph
-                double time = myList.Count; // Use the number of data points as the time
+                double time = i; // Use the number of data points as the time
                 myList.Add(time, plotdata);
                 UpdateGraph();
 
@@ -237,7 +236,7 @@ namespace Senddata
         {
             if (chBoxAlwaysUpdate.Checked)
             {
-                tBoxDataIn.Text = dataIN ;
+                tBoxDataIn.Text = dataIN;
             }
             else if (chBoxAddtoOldData.Checked)
             {
@@ -284,6 +283,24 @@ namespace Senddata
             zg1.Update();
             zg1.Refresh();
         }
+        private void ClearPlotData()
+        {
+            // Clear the PointPairList
+            myList.Clear();
+
+            // Update the graph to reflect the changes
+            UpdateGraph();
+        }
+
+        private void btnClearPlot_Click(object sender, EventArgs e)
+        {
+            ClearPlotData();
+        }
+
+        private void timer1_Tick(object sender, EventArgs e)
+        {
+            i++;
+        }
+  
     }
 }
- 
